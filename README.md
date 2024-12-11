@@ -1,3 +1,5 @@
+Play Here: https://spotifywraipped.onrender.com
+
 Spotify WrAIpped is a Web Application which allows users to login using their Spotify credentials, and have an opportunity to guess which of their favorite artists was used as a prompt for an AI-generated lyric.
 
 As a user, you are first prompted to login through Spotify. After doing so, you are redirected back to SpotifyWrAIpped, where you are then thrown into a game.
