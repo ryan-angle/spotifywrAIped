@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Guess the Artist</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            background: linear-gradient(135deg, #191414, #1DB954);
+            color: white;
+            text-align: center;
+        }
+        .container {
+            max-width: 600px;
+        }
+        .button {
+            background-color: #1DB954;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            margin: 10px;
+            cursor: pointer;
+            font-size: 1rem;
+        }
+        .button:hover {
+            background-color: #14833b;
+        }
+        #next, #play-again {
+            display: none;
+        }
+        #score-container {
+            margin: 20px 0;
+            font-size: 1.2rem;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Guess the Artist!</h1>
+        <div id="score-container">
+            Question <span id="question-number">1</span>/10 | Score: <span id="score">0</span>
+        </div>
+        <p id="lyric">Loading lyric...</p>
+        <div id="options"></div>
+        <p id="message"></p>
+        <button class="button" id="next">Next</button>
+        <button class="button" id="play-again">Play Again</button>
+    </div>
+    <script>
+        let topArtists = [];
+        let currentQuestion = 1;
+        let score = 0;
+        const totalQuestions = 10;
+
+        const optionsContainer = document.getElementById('options');
+        const lyricElement = document.getElementById('lyric');
+        const messageElement = document.getElementById('message');
+        const nextButton = document.getElementById('next');
+        const playAgainButton = document.getElementById('play-again');
+        const questionNumberElement = document.getElementById('question-number');
+        const scoreElement = document.getElementById('score');
+
+        async function fetchArtists() {
+            try {
+                const response = await fetch('/api/top-artists');
+                if (!response.ok) {
+                    throw new Error('Failed to fetch top artists.');
+                }
+                const data = await response.json();
+                topArtists = data.topArtists;
+                nextLyric();
+            } catch (error) {
+                console.error('Error fetching top artists:', error);
+                lyricElement.textContent = 'Error loading artists. Please try again later.';
+            }
+        }
+
+        async function generateLyric(artist) {
+            try {
+                const response = await fetch('/api/generate-lyric', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ artist }),
+                });
+                if (!response.ok) {
+                    throw new Error('Failed to generate lyric.');
+                }
+                const data = await response.json();
+                return data.lyric;
+            } catch (error) {
+                console.error('Error generating lyric:', error);
+                return 'Error generating lyric. Please try again later.';
+            }
+        }
+
+        async function nextLyric() {
+            if (currentQuestion > totalQuestions) {
+                endGame();
+                return;
+            }
+
+            messageElement.textContent = '';
+            nextButton.style.display = 'none';
+            optionsContainer.innerHTML = '';
+            lyricElement.textContent = 'Lyrics loading...';
+
+            // Select a random artist as the correct answer
+            const randomArtist = topArtists[Math.floor(Math.random() * topArtists.length)];
+            const lyric = await generateLyric(randomArtist);
+            lyricElement.innerHTML = lyric.replace(/\n/g, '<br>');
+
+            // Generate options ensuring no duplicates
+            const otherArtists = topArtists.filter((artist) => artist !== randomArtist);
+            const shuffledOtherArtists = otherArtists.sort(() => Math.random() - 0.5).slice(0, 3);
+            const options = [...shuffledOtherArtists, randomArtist].sort(() => Math.random() - 0.5);
+
+            options.forEach((artist) => {
+                const button = document.createElement('button');
+                button.textContent = artist;
+                button.className = 'button';
+                button.addEventListener('click', () => handleAnswer(artist, randomArtist));
+                optionsContainer.appendChild(button);
+            });
+        }
+
+        function handleAnswer(selectedArtist, correctArtist) {
+            optionsContainer.querySelectorAll('button').forEach((button) => (button.disabled = true));
+            nextButton.style.display = 'inline-block';
+
+            if (selectedArtist === correctArtist) {
+                messageElement.innerHTML = `<span style="color: #1DB954; font-weight: bold;">Correct!</span>`;
+                score++;
+            } else {
+                messageElement.innerHTML = `<span style="color: red; font-weight: bold;">Wrong!</span> It was <strong>${correctArtist}</strong>.`;
+            }
+
+            scoreElement.textContent = score;
+        }
+
+        function endGame() {
+            lyricElement.textContent = 'Game Over!';
+            questionNumberElement.textContent = 10
+            optionsContainer.innerHTML = '';
+            messageElement.innerHTML = `Your final score is <strong>${score}</strong>/${totalQuestions}.`;
+            nextButton.style.display = 'none';
+            playAgainButton.style.display = 'inline-block';
+        }
+
+        playAgainButton.addEventListener('click', () => {
+            currentQuestion = 1;
+            score = 0;
+            scoreElement.textContent = score;
+            questionNumberElement.textContent = currentQuestion;
+            playAgainButton.style.display = 'none';
+            nextLyric();
+        });
+
+        nextButton.addEventListener('click', () => {
+            currentQuestion++;
+            questionNumberElement.textContent = currentQuestion;
+            nextLyric();
+        });
+
+        fetchArtists();
+    </script>
+</body>
+</html>
