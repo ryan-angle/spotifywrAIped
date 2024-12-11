@@ -11,12 +11,12 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 const app = express();
-const PORT = 7768;
+const PORT = process.env.PORT || 7768;
 
 // Spotify App Credentials
 const CLIENT_ID = process.env.SPOTIFY_CLIENT_ID;
 const CLIENT_SECRET = process.env.SPOTIFY_CLIENT_SECRET;
-const REDIRECT_URI = 'http://localhost:7768/callback';
+const REDIRECT_URI = 'https://spotifywraipped.onrender.com/callback';
 const OPENAI_API_KEY = process.env.OPENAI_API_KEY;
 
 // Middleware
